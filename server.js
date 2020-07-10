@@ -9,23 +9,30 @@ const inquirer = require("inquirer");
 // MYSQL ===================================
 // =========================================
 const connection = mysql.createConnection({
-  host: "localhost",
+    host: "localhost",
 
-  // Your port; if not 3306
-  port: 3306,
+    // Your port; if not 3306
+    port: 3306,
 
-  // Your username
-  user: "root",
+    // Your username
+    user: "root",
 
-  // Your password
-  password: "EkUF,wC,3^~9&WXfXJ*.4X~i",
-  database: "employeesDB"
+    // Your password
+    password: "EkUF,wC,3^~9&WXfXJ*.4X~i",
+    database: "employeesDB"
 });
 
 connection.connect(function(err) {
-  if (err) throw err;
-  console.log("connecting...")
-  init();
+    if (err) throw err;
+    console.log("connecting...")
+    
+    getEmployees().then(function(data) {
+        console.log (data.length);
+        for (i = 0; i < data.length; i++) {
+            employeesArray.push(data[i].first_name + " " + data[i].last_name + "," + new inquirer.Separator())
+        }
+        init();
+    }).catch((err) => setImmediate(() => { throw err; }));
 });
 // =========================================^
 
@@ -33,9 +40,10 @@ connection.connect(function(err) {
 
 // GLOBAL VARIABLES ===
 // ====================
-const allDepartments = [];
-const allEmployees = [];
-const allRoles = [];
+const employeesArray = [];
+const departmentsArray = [];
+const rolesArray = [];
+const managersArray = [];
 // ====================^
 
 
@@ -74,6 +82,13 @@ const questions = [
             "New Department", new inquirer.Separator(),
             "New actions", new inquirer.Separator(), 
         ],
+    },
+    {
+        type: "list",
+        name: "update",
+        message: "What would you like to update?",
+        when: (response) => response.actions == "Update Employee Role",
+        choices: employeesArray,
     },
 ]
 
@@ -178,11 +193,67 @@ beginPrompt = () => {
         if (response.add == "New Employee") { addEmployees() };
         if (response.add == "New Role") { addRoles(); }
 
+        for (i = 0, i < employeesArray.length; i++){
+            if (response.update == employeesArray[i]) { updateEmployee(); };
+        }
+
+
     })
 }
-
-
 // ====================================================================================^
+
+
+
+// PROMISES THAT PULL INFO FROM DATABASE ===============================
+// =====================================================================
+getEmployees = () => {
+    return new Promise(function(resolve, reject) {
+        connection.query("SELECT * FROM employee", (err, data) => {
+            if (err) {
+                return reject(err);
+            }
+            resolve(data);
+        });
+    });
+}
+getDepartments = () => {
+    return new Promise(function(resolve, reject) {
+        connection.query("SELECT * FROM department", (err, data) => {
+            if (err) {
+                return reject(err);
+            }
+            resolve(data);
+        });
+    });
+}
+getRoles = () => {
+    return new Promise(function(resolve, reject) {
+        connection.query("SELECT * FROM role", (err, data) => {
+            if (err) {
+                return reject(err);
+            }
+            resolve(data);
+        });
+    });
+}
+// =====================================================================^
+
+
+// getDepartments().then(function(data) {
+//     console.log (data.length);
+//     for (i = 0; i < data.length; i++) {
+//         departmentsArray.push(data[i].name)
+//     }
+//     console.log(departmentsArray)
+// }).catch((err) => setImmediate(() => { throw err; }));
+
+// getRoles().then(function(data) {
+//     console.log (data.length);
+//     for (i = 0; i < data.length; i++) {
+//         rolesArray.push(data[i].title)
+//     }
+//     console.log(rolesArray)
+// }).catch((err) => setImmediate(() => { throw err; }));
 
 
 
@@ -255,6 +326,22 @@ addRoles = () => {
 // ==================================================================^
 
 
+
+// ADD TO TABLE FUNCTIONS ===========================================
+// ==================================================================
+addRoles = () => {
+    inquirer
+    .prompt(addEmployeePrompt)
+    .then((response) => {
+        connection.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) values` +
+        `("${response.employeeFirstName}", "${response.employeeLastName}", "${response.employeeRole}", "${response.employeeManager}");`), 
+            (err, data) => {if (err) throw err;}
+        console.log("Employee Added.")
+    })
+    finishPrompts();
+}
+
+
 finishPrompts = () => {
     inquirer
     .prompt(finished)
@@ -264,7 +351,7 @@ finishPrompts = () => {
         }
     })
 }
-
+// ==================================================================^
 
 askContinue = () => {
     inquirer
