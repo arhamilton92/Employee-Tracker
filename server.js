@@ -17,6 +17,7 @@ const rolesArrayInquirer = [];
 const managersArray = [];
 let employeeNumber;
 let roleNumber;
+let departmentNumber;
 // ==========================^
 
 
@@ -36,25 +37,6 @@ const connection = mysql.createConnection({
 connection.connect(function(err) {
     if (err) throw err;
     console.log("connecting...")
-    // ------------------------------
-    // STARTS THE APP ---------------
-    getEmployees().then(function(data) {
-        console.log (data.length);
-        for (i = 0; i < data.length; i++) {
-            employeesArrayInquirer.push(data[i].first_name + " " + data[i].last_name + "," + new inquirer.Separator());
-            employeesArray.push(data[i].id)
-
-        }
-        getRoles().then(function(data) {
-            console.log (data.length);
-            for (i = 0; i < data.length; i++) {
-                rolesArrayInquirer.push(data[i].title + "," + new inquirer.Separator())
-                employeesArray.push(data[i].id)
-            }
-            console.log(rolesArray)
-            init();
-        }).catch((err) => setImmediate(() => { throw err; }));
-    }).catch((err) => setImmediate(() => { throw err; }));
 });
 // ===============================================================================================================^
 
@@ -91,13 +73,13 @@ const questions = [
         choices: [ 
             "New Employee", new inquirer.Separator(), 
             "New Department", new inquirer.Separator(),
-            "New actions", new inquirer.Separator(), 
+            "New Role", new inquirer.Separator(), 
         ],
     },
     {
         type: "list",
         name: "update",
-        message: "What would you like to update?",
+        message: "Select Employee:",
         when: (response) => response.actions == "Update Employee Role",
         choices: employeesArrayInquirer,
     },
@@ -184,13 +166,9 @@ const addRolePrompt = [
     },
     {
     type: "list",
-    name: "employeeRole",
-    message: "Employee Role ID:",
-    },
-    {
-    type: "input",
-    name: "employeeManager",
-    message: "Employee Manager ID:",
+    name: "department",
+    message: "Department:",
+    choices: rolesArray,
     },
 ];
 // ==========================================================================^
@@ -198,7 +176,25 @@ const addRolePrompt = [
 
 // PROMPTS USER, SELECTS NEXT ACTION ==================================================
 // ====================================================================================
+
 init = () => {
+    getEmployees().then(function(data) {
+        for (i = 0; i < data.length; i++) {
+            employeesArrayInquirer.push(data[i].first_name + " " + data[i].last_name + "," + new inquirer.Separator());
+            employeesArray.push(data[i].id)
+        }
+        getRoles().then(function(data) {
+            for (i = 0; i < data.length; i++) {
+                rolesArrayInquirer.push(data[i].title + "," + new inquirer.Separator())
+                rolesArray.push(data[i].title)
+            }
+            startApp();
+        }).catch((err) => setImmediate(() => { throw err; }));
+    }).catch((err) => setImmediate(() => { throw err; }));
+}
+
+
+startApp = () => {
     console.log();
     console.log("--------------------------------------------------")
     console.log("Hello! Welcome to the MyCompany Employee Database.")
@@ -210,6 +206,7 @@ init = () => {
     //.prompt uses the questions array to ask the user questions
     .prompt(questions)
     .then((response) => {
+        console.log('stuff')
         if (response.view == "View Departments") { viewDepartments() };
         if (response.view == "View Employees") { viewEmployees() };
         if (response.view == "View Roles") { viewRoles(); }
@@ -217,26 +214,23 @@ init = () => {
         if (response.add == "New Department") { addDepartments() };
         if (response.add == "New Employee") { addEmployees() };
         if (response.add == "New Role") { addRoles(); }
+        
+        
         // ------------------------------------------------------------
-        console.log('done')
-        console.log(response)
         if (response.confirmRole == true) {
             for (i = 0; i < employeesArray.length; i++) {
                 if (response.update == employeesArrayInquirer[i]) { 
-                    employeeNumber = i + 1;
-                    console.log("getting employee #")
-                    console.log(employeeNumber)
+                    employeeNumber = i;
+                    employeeNumber++;
                 }
                 if (response.newRole == rolesArrayInquirer[i]) { 
-                    roleNumber = i + 1;
-                    console.log("getting role #")
-                    console.log(roleNumber)
+                    roleNumber = i;
+                    roleNumber++;
                 }
             }
             updateEmployee();
         }
-    })
-}
+    })}
 // ====================================================================================^
 
 
@@ -317,15 +311,40 @@ addEmployees = () => {
         console.log("Employee Added.")
         finishPrompts()
     })}
+
 addRoles = () => {
     inquirer
-    .prompt(addEmployeePrompt)
+    .prompt(addRolePrompt)
     .then((response) => {
-        connection.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) values` +
-        `("${response.employeeFirstName}", "${response.employeeLastName}", "${response.employeeRole}", "${response.employeeManager}");`), 
+
+        for (i = 0; i < rolesArray.length; i++) {
+            if (response.department == rolesArray[i]) { 
+                departmentNumber = i;
+                departmentNumber++;
+            }
+        }
+        
+        connection.query(`INSERT INTO role (title, salary, department_id) values` +
+        `(("${response.roleTitle}", "${response.salary}", "${departmentNumber}");`), 
             (err, data) => {if (err) throw err;}
-        console.log("Employee Added.")
+        console.log("Role Added.")
         finishPrompts()
+    })}
+addRoles = () => {
+    inquirer
+    .prompt(addRolePrompt)
+    .then((response) => {
+        for (i = 0; i < rolesArray.length; i++) {
+            if (response.department == rolesArray[i]) { 
+                departmentNumber = i;
+                departmentNumber++;
+            }
+        }
+        connection.query(`INSERT INTO role (title, salary, department_id) values` +
+        `("${response.roleTitle}", "${response.salary}", "${departmentNumber}");`), 
+            (err, data) => {
+                if (err) throw err;
+            }
     })}
 // ========================================================================================================================================^
 
@@ -382,3 +401,6 @@ askContinue = () => {
 //     console.log(departmentsArray)
 // }).catch((err) => setImmediate(() => { throw err; }));
 // =========================================================^
+
+
+init();
