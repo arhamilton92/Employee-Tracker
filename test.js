@@ -72,10 +72,10 @@ console.log("hi!")
 //     connection.query("SELECT * FROM employee", (err, data) => {
 //     if (err) throw err;
 //     // console.log(data[1].first_name, data[1].last_name);
-//     // for (i = 0; i < data.length; i++) {
-//     // console.log(data[i].first_name, data[i].last_name);
-//         let name = data;
-//     });
+    for (i = 0; i < data.length; i++) {
+    console.log(data[i].first_name, data[i].last_name);
+        let name = data;
+    });
 // }
 
 

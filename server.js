@@ -6,17 +6,28 @@ const inquirer = require("inquirer");
 // ===================================^
 
 
-// MYSQL ===================================
-// =========================================
+// GLOBAL VARIABLES =========
+// ==========================
+const employeesArrayInquirer = [];
+const departmentsArrayInquirer = [];
+const employeesArray = [];
+const departmentsArray = [];
+const rolesArray = [];
+const rolesArrayInquirer = [];
+const managersArray = [];
+let employeeNumber;
+let roleNumber;
+// ==========================^
+
+
+// MYSQL =========================================================================================================
+// ===============================================================================================================
 const connection = mysql.createConnection({
     host: "localhost",
-
     // Your port; if not 3306
     port: 3306,
-
     // Your username
     user: "root",
-
     // Your password
     password: "EkUF,wC,3^~9&WXfXJ*.4X~i",
     database: "employeesDB"
@@ -25,31 +36,31 @@ const connection = mysql.createConnection({
 connection.connect(function(err) {
     if (err) throw err;
     console.log("connecting...")
-    
+    // ------------------------------
+    // STARTS THE APP ---------------
     getEmployees().then(function(data) {
         console.log (data.length);
         for (i = 0; i < data.length; i++) {
-            employeesArray.push(data[i].first_name + " " + data[i].last_name + "," + new inquirer.Separator())
+            employeesArrayInquirer.push(data[i].first_name + " " + data[i].last_name + "," + new inquirer.Separator());
+            employeesArray.push(data[i].id)
+
         }
-        init();
+        getRoles().then(function(data) {
+            console.log (data.length);
+            for (i = 0; i < data.length; i++) {
+                rolesArrayInquirer.push(data[i].title + "," + new inquirer.Separator())
+                employeesArray.push(data[i].id)
+            }
+            console.log(rolesArray)
+            init();
+        }).catch((err) => setImmediate(() => { throw err; }));
     }).catch((err) => setImmediate(() => { throw err; }));
 });
-// =========================================^
+// ===============================================================================================================^
 
 
-
-// GLOBAL VARIABLES ===
-// ====================
-const employeesArray = [];
-const departmentsArray = [];
-const rolesArray = [];
-const managersArray = [];
-// ====================^
-
-
-
-// INQUIRER QUESTIONS ===============================================
-// ==================================================================
+// INQUIRER QUESTIONS =======================================================
+// ==========================================================================
 const questions = [
     {
         type: "list",
@@ -88,9 +99,31 @@ const questions = [
         name: "update",
         message: "What would you like to update?",
         when: (response) => response.actions == "Update Employee Role",
-        choices: employeesArray,
+        choices: employeesArrayInquirer,
+    },
+    {
+        type: "list",
+        name: "newRole",
+        message: "Change role to:",
+        when: (response) => response.actions == "Update Employee Role",
+        choices: rolesArrayInquirer,
+    },
+    {
+        type: "confirm",
+        name: "confirmRole",
+        message: "Change Role?",
+        when: (response) => response.actions == "Update Employee Role",
     },
 ]
+
+
+const finished = [        
+    {
+    type: "confirm",
+    name: "finished?"
+    },
+];
+
 
 const continuePrompt = [        
     {
@@ -106,12 +139,6 @@ const continuePrompt = [
     },
 ];
 
-const finished = [        
-    {
-    type: "confirm",
-    name: "finished?"
-    },
-];
 
 const addEmployeePrompt = [        
     {
@@ -166,14 +193,12 @@ const addRolePrompt = [
     message: "Employee Manager ID:",
     },
 ];
-
-// ==================================================================^
-
+// ==========================================================================^
 
 
 // PROMPTS USER, SELECTS NEXT ACTION ==================================================
 // ====================================================================================
-beginPrompt = () => {
+init = () => {
     console.log();
     console.log("--------------------------------------------------")
     console.log("Hello! Welcome to the MyCompany Employee Database.")
@@ -188,20 +213,31 @@ beginPrompt = () => {
         if (response.view == "View Departments") { viewDepartments() };
         if (response.view == "View Employees") { viewEmployees() };
         if (response.view == "View Roles") { viewRoles(); }
-
+        // ------------------------------------------------------------
         if (response.add == "New Department") { addDepartments() };
         if (response.add == "New Employee") { addEmployees() };
         if (response.add == "New Role") { addRoles(); }
-
-        for (i = 0, i < employeesArray.length; i++){
-            if (response.update == employeesArray[i]) { updateEmployee(); };
+        // ------------------------------------------------------------
+        console.log('done')
+        console.log(response)
+        if (response.confirmRole == true) {
+            for (i = 0; i < employeesArray.length; i++) {
+                if (response.update == employeesArrayInquirer[i]) { 
+                    employeeNumber = i + 1;
+                    console.log("getting employee #")
+                    console.log(employeeNumber)
+                }
+                if (response.newRole == rolesArrayInquirer[i]) { 
+                    roleNumber = i + 1;
+                    console.log("getting role #")
+                    console.log(roleNumber)
+                }
+            }
+            updateEmployee();
         }
-
-
     })
 }
 // ====================================================================================^
-
 
 
 // PROMISES THAT PULL INFO FROM DATABASE ===============================
@@ -214,8 +250,7 @@ getEmployees = () => {
             }
             resolve(data);
         });
-    });
-}
+    })}
 getDepartments = () => {
     return new Promise(function(resolve, reject) {
         connection.query("SELECT * FROM department", (err, data) => {
@@ -224,8 +259,7 @@ getDepartments = () => {
             }
             resolve(data);
         });
-    });
-}
+    })}
 getRoles = () => {
     return new Promise(function(resolve, reject) {
         connection.query("SELECT * FROM role", (err, data) => {
@@ -234,60 +268,35 @@ getRoles = () => {
             }
             resolve(data);
         });
-    });
-}
+    })}
 // =====================================================================^
 
 
-// getDepartments().then(function(data) {
-//     console.log (data.length);
-//     for (i = 0; i < data.length; i++) {
-//         departmentsArray.push(data[i].name)
-//     }
-//     console.log(departmentsArray)
-// }).catch((err) => setImmediate(() => { throw err; }));
-
-// getRoles().then(function(data) {
-//     console.log (data.length);
-//     for (i = 0; i < data.length; i++) {
-//         rolesArray.push(data[i].title)
-//     }
-//     console.log(rolesArray)
-// }).catch((err) => setImmediate(() => { throw err; }));
-
-
-
-// DISPLAY TABLE FUNCTIONS =============================================
+// DISPLAY TABLE FUNCTIONS ==========================================
 // ==================================================================
 viewDepartments = () => {
     connection.query("SELECT * FROM department", (err, data) => {
         if (err) throw err;
         console.table(data);
         finishPrompts();
-    });
-}
-
+    })}
 viewEmployees = () => {
     connection.query("SELECT * FROM employee", (err, data) => {
         if (err) throw err;
         console.table(data);
-    });
-    finishPrompts();
-}
-
+        finishPrompts()
+    })}
 viewRoles = () => {
     connection.query("SELECT * FROM role", (err, data) => {
         if (err) throw err;
         console.table(data);
-    });
-    finishPrompts();
-}
+        finishPrompts();
+    })}
 // ==================================================================^
 
 
-
-// ADD TO TABLE FUNCTIONS ===========================================
-// ==================================================================
+// ADD TO TABLE FUNCTIONS =================================================================================================================
+// ========================================================================================================================================
 addDepartments = () => {
     inquirer
     .prompt(addDepartmentPrompt)
@@ -296,10 +305,8 @@ addDepartments = () => {
         `("${response.departmentName}");`), 
             (err, data) => {if (err) throw err;}
         console.log("Department Added.")
-    })
-    finishPrompts();
-}
-
+        finishPrompts()
+    })}
 addEmployees = () => {
     inquirer
     .prompt(addEmployeePrompt)
@@ -308,10 +315,8 @@ addEmployees = () => {
         `("${response.employeeFirstName}", "${response.employeeLastName}", "${response.employeeRole}", "${response.employeeManager}");`), 
             (err, data) => {if (err) throw err;}
         console.log("Employee Added.")
-    })
-    finishPrompts();
-}
-
+        finishPrompts()
+    })}
 addRoles = () => {
     inquirer
     .prompt(addEmployeePrompt)
@@ -320,28 +325,25 @@ addRoles = () => {
         `("${response.employeeFirstName}", "${response.employeeLastName}", "${response.employeeRole}", "${response.employeeManager}");`), 
             (err, data) => {if (err) throw err;}
         console.log("Employee Added.")
-    })
-    finishPrompts();
-}
-// ==================================================================^
+        finishPrompts()
+    })}
+// ========================================================================================================================================^
 
 
-
-// ADD TO TABLE FUNCTIONS ===========================================
-// ==================================================================
-addRoles = () => {
-    inquirer
-    .prompt(addEmployeePrompt)
-    .then((response) => {
-        connection.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) values` +
-        `("${response.employeeFirstName}", "${response.employeeLastName}", "${response.employeeRole}", "${response.employeeManager}");`), 
-            (err, data) => {if (err) throw err;}
-        console.log("Employee Added.")
-    })
-    finishPrompts();
-}
+// UPDATE EMPLOYEE ROLE ===================================================================================================================
+// ========================================================================================================================================
+updateEmployee = () => {
+    console.log("inside update employee")
+    connection.query(`UPDATE employee SET role_id = ${roleNumber} WHERE id = ${employeeNumber}`), 
+        (err, data) => {if (err) throw err;}
+    console.log("Employee Added.")
+    finishPrompts()
+    }
+// ========================================================================================================================================^
 
 
+// COMPLETES INQUIRER =========
+// ============================
 finishPrompts = () => {
     inquirer
     .prompt(finished)
@@ -349,10 +351,12 @@ finishPrompts = () => {
         if (response) {
             askContinue();
         }
-    })
-}
-// ==================================================================^
+    })}
+// ============================^
 
+
+// PROMPTS USER TO RESTART ==================================================
+// ==========================================================================
 askContinue = () => {
     inquirer
     .prompt(continuePrompt)
@@ -364,10 +368,17 @@ askContinue = () => {
             console.log("Thank you for using MyCompany Employee Database!")
             console.log("------------------------------------------------")
         }
-    })
-}
+    })}
+// =========================================================================^
 
 
-init = () => {
-    beginPrompt()
-}
+// PROMISE CALLS // UNUSED =================================
+// =========================================================
+// getDepartments().then(function(data) {
+//     console.log (data.length);
+//     for (i = 0; i < data.length; i++) {
+//         departmentsArray.push(data[i].name)
+//     }
+//     console.log(departmentsArray)
+// }).catch((err) => setImmediate(() => { throw err; }));
+// =========================================================^
