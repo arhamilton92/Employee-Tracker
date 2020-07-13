@@ -176,7 +176,6 @@ const addRolePrompt = [
 
 // PROMPTS USER, SELECTS NEXT ACTION ==================================================
 // ====================================================================================
-
 init = () => {
     getEmployees().then(function(data) {
         for (i = 0; i < data.length; i++) {
@@ -192,7 +191,6 @@ init = () => {
         }).catch((err) => setImmediate(() => { throw err; }));
     }).catch((err) => setImmediate(() => { throw err; }));
 }
-
 
 startApp = () => {
     console.log();
@@ -214,7 +212,6 @@ startApp = () => {
         if (response.add == "New Department") { addDepartments() };
         if (response.add == "New Employee") { addEmployees() };
         if (response.add == "New Role") { addRoles(); }
-        
         
         // ------------------------------------------------------------
         if (response.confirmRole == true) {
@@ -311,40 +308,21 @@ addEmployees = () => {
         console.log("Employee Added.")
         finishPrompts()
     })}
-
 addRoles = () => {
     inquirer
     .prompt(addRolePrompt)
     .then((response) => {
-
         for (i = 0; i < rolesArray.length; i++) {
             if (response.department == rolesArray[i]) { 
                 departmentNumber = i;
                 departmentNumber++;
             }
         }
-        
         connection.query(`INSERT INTO role (title, salary, department_id) values` +
         `(("${response.roleTitle}", "${response.salary}", "${departmentNumber}");`), 
             (err, data) => {if (err) throw err;}
         console.log("Role Added.")
         finishPrompts()
-    })}
-addRoles = () => {
-    inquirer
-    .prompt(addRolePrompt)
-    .then((response) => {
-        for (i = 0; i < rolesArray.length; i++) {
-            if (response.department == rolesArray[i]) { 
-                departmentNumber = i;
-                departmentNumber++;
-            }
-        }
-        connection.query(`INSERT INTO role (title, salary, department_id) values` +
-        `("${response.roleTitle}", "${response.salary}", "${departmentNumber}");`), 
-            (err, data) => {
-                if (err) throw err;
-            }
     })}
 // ========================================================================================================================================^
 
