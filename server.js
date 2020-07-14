@@ -205,9 +205,9 @@ startApp = () => {
     .prompt(questions)
     .then((response) => {
         console.log('stuff')
-        if (response.view == "View Departments") { viewDepartments() };
-        if (response.view == "View Employees") { viewEmployees() };
-        if (response.view == "View Roles") { viewRoles(); }
+        if (response.view == "View Departments") { view = "department"; viewAll() };
+        if (response.view == "View Employees") { view = "employee"; viewAll() };
+        if (response.view == "View Roles") { view = "role"; viewAll(); }
         // ------------------------------------------------------------
         if (response.add == "New Department") { addDepartments() };
         if (response.add == "New Employee") { addEmployees() };
@@ -265,20 +265,8 @@ getRoles = () => {
 
 // DISPLAY TABLE FUNCTIONS ==========================================
 // ==================================================================
-viewDepartments = () => {
-    connection.query("SELECT * FROM department", (err, data) => {
-        if (err) throw err;
-        console.table(data);
-        finishPrompts();
-    })}
-viewEmployees = () => {
-    connection.query("SELECT * FROM employee", (err, data) => {
-        if (err) throw err;
-        console.table(data);
-        finishPrompts()
-    })}
-viewRoles = () => {
-    connection.query("SELECT * FROM role", (err, data) => {
+viewAll = () => {
+    connection.query("SELECT * FROM " + view, (err, data) => {
         if (err) throw err;
         console.table(data);
         finishPrompts();
